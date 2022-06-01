@@ -1,49 +1,62 @@
-import './css/styles.css';
-import { fetchCountries } from './javascript/fetchCountries.js';
-import debounce from 'lodash.debounce';
+import { UnsplashApi } from './javascript/fetchApi';
+import createGalleryCards from './templates/gallery-card.hbs';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
-import createCountries from './template/featch-countr.hbs';
-import countryList from './template/country-name.hbs';
 
-const DEBOUNCE_DELAY = 300;
+const searchFormEl = document.querySelector('.search-form');
+const galleryListEl = document.querySelector('.gallery');
+const loadMoreBtnEl = document.querySelector('.js-load-more');
 
-const inputEl = document.querySelector('#search-box');
-const infoEl = document.querySelector('.js-country__info');
-const listEl = document.querySelector('.js-country__list');
+const unsplashApi = new UnsplashApi();
 
-function handleCountryList(countries) {
-  if (countries.length > 10) {
-    Notify.info('Too many matches found. Please enter a more specific name.');
-    return;
-  }
-  if (countries.length === 1) {
-    console.log(countries[0]);
-    infoEl.innerHTML = createCountries(
-      ({ name, capital, languages, population } = countries[0])
-    );
-    listEl.innerHTML = '';
-  } else {
-    listEl.innerHTML = countryList(countries);
-    infoEl.innerHTML = '';
-  }
-}
-
-const onSearchInput = debounce(event => {
+const onSearchFormSubmit = async event => {
   event.preventDefault();
-  const searchQuery = event.target.value.trim();
 
-  if (searchQuery) {
-    fetchCountries(searchQuery)
-      .then(response => {
-        handleCountryList(response);
-      })
-      .catch(err => {
-        console.error(err);
-      });
-  } else {
-    listEl.innerHTML = '';
-    infoEl.innerHTML = '';
+  unsplashApi.query = event.currentTarget.elements['searchQuery'].value
+    .trim()
+    .toLowerCase();
+  unsplashApi.page = 1;
+
+  try {
+    const { data } = await unsplashApi.fetchPhotos();
+
+    if (!data.hits.length) {
+      galleryListEl.innerHTML = '';
+      loadMoreBtnEl.classList.add('is-hidden');
+      Notify.failure(
+        'Sorry, there are no images matching your search query. Please try again.'
+      );
+    } else {
+      loadMoreBtnEl.classList.remove('is-hidden');
+      Notify.success(`Hooray! We found ${data.totalHits} images.`);
+    }
+
+    galleryListEl.innerHTML = createGalleryCards(data.hits);
+  } catch (err) {
+    console.log(err);
   }
-}, DEBOUNCE_DELAY);
+};
 
-inputEl.addEventListener('input', onSearchInput);
+const onLoadMoreBtnElClick = async event => {
+  unsplashApi.incrementPage();
+
+  try {
+    const { data } = await unsplashApi.fetchPhotos();
+
+    galleryListEl.insertAdjacentHTML(
+      'beforeend',
+      createGalleryCards(data.hits)
+    );
+
+    if (!data.hits.length) {
+      loadMoreBtnEl.classList.add('is-hidden');
+      Notify.failure(
+        "We're sorry, but you've reached the end of search results."
+      );
+    }
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+searchFormEl.addEventListener('submit', onSearchFormSubmit);
+loadMoreBtnEl.addEventListener('click', onLoadMoreBtnElClick);
