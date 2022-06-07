@@ -1,6 +1,9 @@
 import { UnsplashApi } from './javascript/fetchApi';
 import createGalleryCards from './templates/gallery-card.hbs';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
+import SimpleLightbox from 'simplelightbox';
+// Дополнительный импорт стилей
+import 'simplelightbox/dist/simple-lightbox.min.css';
 
 const searchFormEl = document.querySelector('.search-form');
 const galleryListEl = document.querySelector('.gallery');
@@ -18,6 +21,7 @@ const onSearchFormSubmit = async event => {
 
   try {
     const { data } = await unsplashApi.fetchPhotos();
+    await console.log(data.hits);
 
     if (!data.hits.length) {
       galleryListEl.innerHTML = '';
@@ -41,7 +45,6 @@ const onLoadMoreBtnElClick = async event => {
 
   try {
     const { data } = await unsplashApi.fetchPhotos();
-
     galleryListEl.insertAdjacentHTML(
       'beforeend',
       createGalleryCards(data.hits)
@@ -57,6 +60,11 @@ const onLoadMoreBtnElClick = async event => {
     console.log(err);
   }
 };
+
+var lightbox = new SimpleLightbox('.gallery a', {
+  // captionsData: 'alt',
+  // captionDelay: 250,
+});
 
 searchFormEl.addEventListener('submit', onSearchFormSubmit);
 loadMoreBtnEl.addEventListener('click', onLoadMoreBtnElClick);
