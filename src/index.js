@@ -10,6 +10,7 @@ const galleryListEl = document.querySelector('.gallery');
 const loadMoreBtnEl = document.querySelector('.js-load-more');
 
 const unsplashApi = new UnsplashApi();
+let lightbox = null;
 
 const onSearchFormSubmit = async event => {
   event.preventDefault();
@@ -35,6 +36,12 @@ const onSearchFormSubmit = async event => {
     }
 
     galleryListEl.innerHTML = createGalleryCards(data.hits);
+
+    lightbox = new SimpleLightbox('.gallery a', {
+      captionsData: 'alt',
+      captionPosition: 'bottom',
+      captionDelay: 250,
+    });
   } catch (err) {
     console.log(err);
   }
@@ -50,6 +57,7 @@ const onLoadMoreBtnElClick = async event => {
       createGalleryCards(data.hits)
     );
 
+    lightbox.refresh();
     if (!data.hits.length) {
       loadMoreBtnEl.classList.add('is-hidden');
       Notify.failure(
@@ -60,11 +68,6 @@ const onLoadMoreBtnElClick = async event => {
     console.log(err);
   }
 };
-
-var lightbox = new SimpleLightbox('.gallery a', {
-  // captionsData: 'alt',
-  // captionDelay: 250,
-});
 
 searchFormEl.addEventListener('submit', onSearchFormSubmit);
 loadMoreBtnEl.addEventListener('click', onLoadMoreBtnElClick);
